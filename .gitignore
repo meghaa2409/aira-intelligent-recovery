@@ -1,0 +1,30 @@
+﻿# Python
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+.env
+.env.*
+
+# IDE
+.vscode/
+.idea/
+
+# Docker
+*.log
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Secrets and credentials
+*.pem
+*.key
+.aws/
