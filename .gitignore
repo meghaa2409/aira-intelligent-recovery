@@ -1,10 +1,17 @@
-﻿# Python
+# Python
 __pycache__/
 *.py[cod]
 venv/
 .venv/
+**/venv/
+**/.venv/
+
+# Environment variables and secrets
 .env
 .env.*
+*.pem
+*.key
+.aws/
 
 # IDE
 .vscode/
@@ -20,11 +27,6 @@ venv/
 *.tfplan
 crash.log
 
-# OS
+# Operating system
 Thumbs.db
 .DS_Store
-
-# Secrets and credentials
-*.pem
-*.key
-.aws/
