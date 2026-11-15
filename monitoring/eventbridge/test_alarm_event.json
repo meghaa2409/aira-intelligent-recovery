@@ -1,0 +1,18 @@
+
+{
+  "version": "0",
+  "id": "aira-test-001",
+  "source": "aws.cloudwatch",
+  "detail-type": "CloudWatch Alarm State Change",
+  "region": "ap-south-1",
+  "detail": {
+    "alarmName": "aira-high-cpu-alarm",
+    "state": {
+      "value": "ALARM",
+      "reason": "Threshold Crossed: CPU utilization exceeded 80%"
+    },
+    "previousState": {
+      "value": "OK"
+    }
+  }
+}
