@@ -1,219 +1,247 @@
-﻿# AIRA
-## AI-Driven Intelligent Recovery and Deployment Orchestrator for AWS
+# AIRA – AI-Driven Intelligent Recovery and Deployment Orchestrator for AWS
 
-### 1. Project Overview
+## 1. Project Overview
 
-AIRA is an AI-assisted incident detection, analysis and recovery orchestration project built on AWS.
+AIRA (AI-Driven Intelligent Recovery and Deployment Orchestrator for AWS) is a cloud-based project designed to monitor application health, analyze incidents, and support recovery operations in AWS environments.
 
-The system is designed to monitor application health, detect incidents, analyse their causes, recommend controlled recovery actions and verify application health.
+It integrates application development, AI-based incident analysis, Docker containerization, AWS infrastructure, monitoring, and CI/CD automation into one solution.
 
-### 2. Project Objectives
+## 2. Project Objectives
 
-- Deploy a sample application on AWS.
-- Monitor application health and performance.
-- Detect incidents using AWS monitoring services.
-- Analyse incidents and recommend recovery actions.
-- Validate recommendations using predefined safety policies.
-- Support human approval before recovery actions.
-- Verify and record recovery results.
+- Deploy applications reliably on AWS.
+- Monitor application health and identify incidents.
+- Analyze incident information using an AI-based incident analyzer.
+- Support recovery workflows with human approval.
+- Automate application builds and deployments using GitHub Actions.
+- Improve application reliability through cloud monitoring and recovery integration.
 
-### 3. Key Features
+## 3. Key Features
 
-- FastAPI-based application backend.
-- Docker containerization.
-- Container image storage in Amazon ECR.
-- Application deployment using Amazon ECS with AWS Fargate.
-- Public application access through an Application Load Balancer.
-- Automated build and deployment using GitHub Actions.
-- Application health checks.
-- Incident monitoring using CloudWatch.
-- Event-driven incident handling using EventBridge and AWS Lambda.
-- Human-approval gate for recovery actions.
+- FastAPI-based backend application.
+- AI-based incident analysis.
+- Live incident analysis using application monitoring data.
+- Docker-based application containerization.
+- Amazon ECR for Docker image storage.
+- Amazon ECS with AWS Fargate for deployment.
+- Application Load Balancer for application access.
+- Amazon CloudWatch monitoring.
+- EventBridge and Lambda-based incident handling.
+- Recovery approval and rejection API endpoints.
+- GitHub Actions CI/CD automation.
+- Terraform-based infrastructure configuration.
 
-### 4. Technology Stack
+## 4. Technology Stack
 
-| Area | Technologies |
+| Category | Technologies |
 |---|---|
-| Backend | Python, FastAPI |
+| Programming Language | Python |
+| Backend Framework | FastAPI |
+| AI / Analysis | Python Incident Analyzer |
 | Containerization | Docker |
 | Container Registry | Amazon ECR |
-| Deployment | Amazon ECS, AWS Fargate |
-| Load Balancing | Application Load Balancer |
+| Container Deployment | Amazon ECS, AWS Fargate |
+| Load Balancing | AWS Application Load Balancer |
 | Monitoring | Amazon CloudWatch |
-| Event Handling | Amazon EventBridge, AWS Lambda |
-| Infrastructure | Terraform |
+| Event Handling | Amazon EventBridge |
+| Serverless Processing | AWS Lambda |
 | CI/CD | GitHub Actions |
-| Version Control | Git, GitHub |
-| AI Analysis | Python-based incident analyzer |
-| Potential AI Integration | Amazon Bedrock, subject to availability and access |
+| Infrastructure as Code | Terraform |
+| Cloud Platform | Amazon Web Services |
 
-### 5. System Architecture
-
-The project brings together application deployment, monitoring, incident analysis and controlled recovery.
-
-1. The FastAPI application runs in a Docker container.
-2. The Docker image is stored in Amazon ECR.
-3. Amazon ECS with AWS Fargate runs the application.
-4. An Application Load Balancer provides access to the application.
-5. CloudWatch monitors application and infrastructure signals.
-6. EventBridge routes configured incident events to an AWS Lambda handler.
-7. The incident handler processes incidents and applies an approval gate.
-8. Recovery actions require appropriate approval and controlled execution.
-9. Application health can be checked through the health endpoint.
-
-### 6. Repository Structure
+## 5. Project Structure
 
 ```text
 AIRA/
 ├── README.md
 ├── Dockerfile
 ├── .dockerignore
+├── .gitignore
+│
 ├── .github/
 │   └── workflows/
 │       └── deploy.yml
+│
 ├── application/
 │   └── backend/
-└── ai-engine/
-    └── incident-analyzer/
+│
+├── ai-engine/
+│   └── incident-analyzer/
+│
+├── monitoring/
+│
+├── recovery-workflow/
+│
+├── recovery/
+│   └── lambda/
+│
+└── terraform/
 ```
 
-### 7. Application API Endpoints
+*Note: This shows the main project folders. Individual source files and supporting configuration files are not listed.*
 
-The FastAPI backend provides the following endpoints:
+## 6. API Endpoints
 
-| Method | Endpoint | Purpose |
+The FastAPI application exposes the following endpoints through Swagger UI.
+
+**Swagger Documentation:**
+
+http://aira-alb-879435582.ap-south-1.elb.amazonaws.com/docs
+
+| Method | Endpoint | Description |
 |---|---|---|
-| GET | `/` | Application welcome response |
-| GET | `/health` | Application health check |
-| GET | `/version` | Application version |
-| GET | `/docs` | Interactive Swagger API documentation |
-| GET | `/api/orders` | Sample orders endpoint |
-| GET | `/simulate/error` | Simulate an application error |
-| GET | `/simulate/slow` | Simulate a delayed response |
-| POST | `/analyze-incident` | Analyse an incident |
+| GET | `/` | Application welcome page |
+| GET | `/health` | Checks application health |
+| GET | `/version` | Returns application version |
+| GET | `/api/orders` | Retrieves order information |
+| GET | `/simulate/error` | Simulates an application error |
+| GET | `/simulate/slow` | Simulates a slow response |
+| POST | `/analyze-incident` | Analyzes supplied incident information |
+| GET | `/analyze-live-incident` | Analyzes live incident information |
+| POST | `/recovery/approve` | Handles recovery approval |
+| POST | `/recovery/reject` | Handles recovery rejection |
 
-### 8. AI Incident Analysis
+## 7. AWS Architecture and Deployment
 
-The incident analyzer is implemented in Python.
+The application uses the following AWS services:
 
-It is designed to process incident information, identify possible causes and provide recovery recommendations.
+1. **Amazon VPC:** Provides the cloud network environment.
+2. **Amazon ECS with Fargate:** Runs the containerized application.
+3. **Amazon ECR:** Stores Docker images.
+4. **Application Load Balancer:** Routes incoming application traffic.
+5. **Amazon CloudWatch:** Supports application monitoring.
+6. **Amazon EventBridge:** Supports event-driven incident handling.
+7. **AWS Lambda:** Processes incident-handling events.
 
-Recovery recommendations must be checked against predefined policies before any action is considered for execution.
+## 8. Docker Containerization
 
-Amazon Bedrock is a potential integration and should not be considered an active dependency unless it is configured and verified.
-
-### 9. Docker and CI/CD
-
-The application is containerized using Docker.
-
-The deployment workflow is maintained at:
-
-`.github/workflows/deploy.yml`
-
-The GitHub Actions workflow:
-
-1. Builds the Docker image.
-2. Authenticates with Amazon ECR using GitHub OIDC.
-3. Pushes the image to Amazon ECR.
-4. Registers an updated ECS task definition.
-5. Updates the ECS service.
-6. Waits for the ECS service to become stable.
-
-The workflow supports deployment when changes are pushed to the `develop` branch and can also be started manually.
-
-### 10. AWS Deployment
-
-The application has been deployed using:
-
-- Amazon ECR for container image storage.
-- Amazon ECS with AWS Fargate for container execution.
-- An Application Load Balancer for application access.
-- Amazon CloudWatch for monitoring.
-- AWS IAM roles for controlled access.
-
-The deployed application exposes its API and health-check endpoints through the load balancer.
-
-### 11. Monitoring and Recovery
-
-The monitoring workflow uses:
-
-- Amazon CloudWatch for monitoring and alarms.
-- Amazon EventBridge for event routing.
-- AWS Lambda for incident handling.
-- A human-approval gate before recovery execution.
-
-The CloudWatch-to-EventBridge-to-Lambda incident-handling flow has been demonstrated.
-
-The approval gate can return an `awaiting_human_approval` status without executing recovery.
-
-The approval-to-ECS recovery execution path must be verified before it is presented as a completed end-to-end automated recovery feature.
-
-### 12. Running the Application Locally
-
-Make sure Docker Desktop is running.
+Docker packages the FastAPI application and its dependencies into a portable container image.
 
 Build the Docker image:
 
-```powershell
-docker build -t aira-api:latest .
+```bash
+docker build -t aira-api .
 ```
 
 Run the container:
 
-```powershell
-docker run --rm --name aira-api-local -p 8000:8000 aira-api:latest
+```bash
+docker run -d -p 8000:8000 --name aira-api-test aira-api
 ```
 
-Open the following URLs:
+Verify the application:
 
-- Application: http://localhost:8000/
-- Health check: http://localhost:8000/health
-- API documentation: http://localhost:8000/docs
+```text
+http://localhost:8000/health
+```
 
-### 13. Deployment Verification
+Open Swagger UI:
 
-The following checks can be used to verify the deployed application:
+```text
+http://localhost:8000/docs
+```
 
-- Application welcome endpoint responds successfully.
-- Health endpoint reports a healthy status.
-- Version endpoint returns the application version.
-- Swagger documentation is accessible.
-- ECS service reports a running task.
-- Load balancer target health reports healthy.
-- GitHub Actions deployment workflow completes successfully.
+## 9. CI/CD Pipeline
 
-### 14. Team Responsibilities
+A GitHub Actions workflow automates the application deployment process.
 
-| Team Member | Responsibility |
+Workflow file:
+
+`.github/workflows/deploy.yml`
+
+The pipeline performs these steps:
+
+1. Checks out the source code.
+2. Configures AWS credentials using OpenID Connect (OIDC).
+3. Logs in to Amazon ECR.
+4. Builds and pushes the Docker image.
+5. Retrieves the current ECS task definition.
+6. Updates the container image.
+7. Registers a new ECS task definition.
+8. Deploys the updated task definition to ECS.
+9. Waits for the ECS service to become stable.
+
+This reduces manual deployment steps and supports consistent application updates.
+
+## 10. Monitoring and Incident Analysis
+
+AIRA integrates monitoring and incident analysis components.
+
+- CloudWatch supports application metric monitoring.
+- EventBridge supports event-driven incident handling.
+- Lambda processes monitoring events.
+- The incident analyzer evaluates incident information.
+- The live incident analysis endpoint provides an interface for analyzing current application metrics.
+
+## 11. Recovery Workflow
+
+AIRA includes recovery workflow components that support human-approved recovery operations.
+
+The application provides:
+
+- Recovery approval endpoint.
+- Recovery rejection endpoint.
+- Monitoring and incident-handling integration.
+- Recovery-related Lambda components.
+
+**Implementation status:** Monitoring, incident analysis, and recovery infrastructure have been integrated. Complete human-approved automated recovery execution and end-to-end ECS scaling still require validation.
+
+## 12. Running the Application Locally
+
+### Prerequisites
+
+- Python 3.12 or compatible version.
+- Docker Desktop.
+- Git.
+
+### Clone the repository
+
+```bash
+git clone https://github.com/meghaa2409/aira-intelligent-recovery.git
+cd aira-intelligent-recovery
+```
+
+### Build the Docker image
+
+```bash
+docker build -t aira-api .
+```
+
+### Start the container
+
+```bash
+docker run -d -p 8000:8000 --name aira-api-test aira-api
+```
+
+### Verify application health
+
+Open:
+
+```text
+http://localhost:8000/health
+```
+
+### Access API documentation
+
+Open:
+
+```text
+http://localhost:8000/docs
+```
+
+## 13. Team Contributions
+
+The project is developed collaboratively by four team members.
+
+| Member | Responsibility |
 |---|---|
-| Member 1 | AWS Infrastructure and Terraform |
-| Member 2 | Application Development and AI Analysis |
-| Member 3 | Docker, Container Deployment and CI/CD |
-| Member 4 | Monitoring and Automated Recovery |
+| Member 1 | AWS infrastructure and Terraform |
+| Member 2 | FastAPI backend and AI incident analysis |
+| Member 3 | Docker, Amazon ECR, ECS deployment, and CI/CD |
+| Member 4 | Monitoring, incident handling, and recovery workflow |
 
-### 15. Project Status
+## 14. Project Outcome
 
-The application containerization, AWS application deployment and GitHub Actions CI/CD workflow have been demonstrated successfully.
+AIRA demonstrates the integration of application deployment, cloud infrastructure, monitoring, AI-based incident analysis, and recovery workflow capabilities using AWS services.
 
-The monitoring and incident-handling flow using CloudWatch, EventBridge and Lambda has also been demonstrated.
-
-The human-approval gate is implemented in the incident-handling flow. The complete approval-triggered recovery execution and post-recovery verification should be treated as pending until tested end to end.
-
-### 16. Safety and Security
-
-- AI-generated recommendations must be validated against predefined policies.
-- Arbitrary AI-generated commands must never be executed directly.
-- Recovery actions should require appropriate authorization and approval.
-- AWS access should follow the principle of least privilege.
-- GitHub Actions should use OIDC-based authentication rather than storing long-lived AWS access keys.
-- Secrets and sensitive configuration files must not be committed to the repository.
-
-### 17. Future Enhancements
-
-- Complete and test the human-approval-to-ECS recovery integration.
-- Verify post-recovery application health automatically.
-- Improve incident analysis and recovery recommendations.
-- Integrate Amazon Bedrock if access and project requirements permit.
-- Expand monitoring, logging and incident reporting.
-- Add automated tests for application and recovery components.
+The project provides a foundation for improving application deployment reliability and supporting intelligent incident handling in cloud environments.
 
