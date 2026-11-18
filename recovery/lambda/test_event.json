@@ -1,0 +1,18 @@
+
+{
+  "incident": {
+    "incident_id": "AIRA-LOCAL-001",
+    "incident_type": "high_cpu",
+    "region": "ap-south-1",
+    "service": "aira-api",
+    "severity": "high",
+    "metrics": {
+      "cpu_utilization": 92,
+      "http_5xx_count": 0,
+      "unhealthy_targets": 0
+    },
+    "application": {
+      "health_status": "healthy"
+    }
+  }
+}

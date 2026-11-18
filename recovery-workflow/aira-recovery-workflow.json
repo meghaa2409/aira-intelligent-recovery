@@ -1,0 +1,44 @@
+
+{
+  "Comment": "AIRA incident recovery with human approval",
+  "StartAt": "CheckHumanApproval",
+  "States": {
+    "CheckHumanApproval": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.approved",
+          "BooleanEquals": true,
+          "Next": "InvokeRecoveryLambda"
+        },
+        {
+          "Variable": "$.approved",
+          "BooleanEquals": false,
+          "Next": "RecoveryRejected"
+        }
+      ],
+      "Default": "AwaitingApproval"
+    },
+    "AwaitingApproval": {
+      "Type": "Succeed"
+    },
+    "RecoveryRejected": {
+      "Type": "Pass",
+      "Result": {
+        "status": "rejected",
+        "recovery_executed": false
+      },
+      "End": true
+    },
+    "InvokeRecoveryLambda": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "arn:aws:lambda:ap-south-1:016279724502:function:aira-ecs-recovery",
+        "Payload.$": "$"
+      },
+      "OutputPath": "$.Payload",
+      "End": true
+    }
+  }
+}
