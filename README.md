@@ -77,7 +77,6 @@ AIRA/
 └── terraform/
 ```
 
-*Note: This shows the main project folders. Individual source files and supporting configuration files are not listed.*
 
 ## 6. API Endpoints
 
