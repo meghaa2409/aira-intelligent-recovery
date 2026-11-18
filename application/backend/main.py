@@ -1,12 +1,11 @@
 
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 import json
 import os
 import sys
 import time
 import uuid
-
 import boto3
 from botocore.exceptions import ClientError
 from fastapi import FastAPI, HTTPException
@@ -46,18 +45,28 @@ app = FastAPI(
 
 
 # --------------------------------------------------
-# 4. AWS Step Functions Configuration
+# 4. AWS Configuration
 # --------------------------------------------------
 
 AWS_REGION = "ap-south-1"
+
+ECS_CLUSTER = "aira-cluster"
+ECS_SERVICE = "aira-service"
 
 STATE_MACHINE_ARN = os.getenv(
     "AIRA_STATE_MACHINE_ARN",
     "arn:aws:states:ap-south-1:016279724502:stateMachine:aira-recovery-workflow"
 )
 
+# Step Functions client
 sfn_client = boto3.client(
     "stepfunctions",
+    region_name=AWS_REGION
+)
+
+# CloudWatch client
+cloudwatch_client = boto3.client(
+    "cloudwatch",
     region_name=AWS_REGION
 )
 
@@ -163,7 +172,7 @@ def simulate_slow():
 
 
 # --------------------------------------------------
-# 12. Analyze Incident
+# 12. Analyze Manually Supplied Incident
 # --------------------------------------------------
 
 @app.post("/analyze-incident")
@@ -171,7 +180,7 @@ def analyze_incident_api(incident: IncidentRequest):
 
     incident_data = incident.model_dump()
 
-    # Analyze the incident using the Python rule-based engine
+    # Analyze incident using the Python rule-based engine
     result = analyze_incident(incident_data)
 
     # Validate the recommended recovery action
@@ -186,7 +195,153 @@ def analyze_incident_api(incident: IncidentRequest):
 
 
 # --------------------------------------------------
-# 13. Start Recovery Workflow
+# 13. Retrieve ECS Metrics from CloudWatch
+# --------------------------------------------------
+
+def get_ecs_metric(metric_name: str):
+
+    end_time = datetime.now(timezone.utc)
+    start_time = end_time - timedelta(minutes=30)
+
+    response = cloudwatch_client.get_metric_statistics(
+        Namespace="AWS/ECS",
+        MetricName=metric_name,
+        Dimensions=[
+            {
+                "Name": "ClusterName",
+                "Value": ECS_CLUSTER
+            },
+            {
+                "Name": "ServiceName",
+                "Value": ECS_SERVICE
+            }
+        ],
+        StartTime=start_time,
+        EndTime=end_time,
+        Period=60,
+        Statistics=["Average"]
+    )
+
+    datapoints = response.get("Datapoints", [])
+
+    if not datapoints:
+        raise HTTPException(
+            status_code=503,
+            detail=f"No CloudWatch datapoints available for {metric_name}"
+        )
+
+    # Select the most recent available datapoint
+    latest_datapoint = max(
+        datapoints,
+        key=lambda point: point["Timestamp"]
+    )
+
+    return {
+        "value": round(latest_datapoint["Average"], 2),
+        "unit": latest_datapoint.get("Unit"),
+        "timestamp": latest_datapoint["Timestamp"].isoformat()
+    }
+
+
+# --------------------------------------------------
+# 14. Analyze Live ECS Incident
+# --------------------------------------------------
+
+@app.get("/analyze-live-incident")
+def analyze_live_incident():
+
+    try:
+
+        # Retrieve actual ECS metrics from CloudWatch
+        cpu = get_ecs_metric("CPUUtilization")
+        memory = get_ecs_metric("MemoryUtilization")
+
+        # Prepare incident information for the analyzer
+        incident_data = {
+            "incident_id": f"LIVE-{uuid.uuid4().hex[:8]}",
+            "incident_type": "Live ECS Monitoring",
+            "region": AWS_REGION,
+            "service": "ECS",
+            "severity": "unknown",
+
+            "metrics": {
+                "cpu_utilization": cpu["value"],
+                "memory_utilization": memory["value"],
+
+                # These signals are not retrieved from CloudWatch
+                # by this endpoint.
+                "error_count": 0,
+                "unhealthy_targets": 0
+            },
+
+            # Application health is not independently checked here.
+            "application": {
+                "status": "healthy"
+            }
+        }
+
+        # Analyze the retrieved metric values
+        analysis_result = analyze_incident(incident_data)
+
+        # Validate the recommended recovery action
+        policy_result = validate_recovery_action(
+            analysis_result
+        )
+
+        return {
+            "project": "AIRA",
+            "message": "Live ECS metrics retrieved and analyzed",
+
+            "data_source": "Amazon CloudWatch",
+
+            "aws_details": {
+                "region": AWS_REGION,
+                "cluster": ECS_CLUSTER,
+                "service": ECS_SERVICE
+            },
+
+            "live_metrics": {
+                "cpu_utilization": cpu,
+                "memory_utilization": memory
+            },
+
+            "analysis": analysis_result,
+
+            "recovery_policy": policy_result,
+
+            "additional_information": {
+                "live_signals_not_collected": [
+                    "error_count",
+                    "unhealthy_targets",
+                    "application_status"
+                ],
+                "note": (
+                    "Only CPU and memory are retrieved as live "
+                    "CloudWatch metrics by this endpoint."
+                )
+            }
+        }
+
+    except HTTPException:
+        raise
+
+    except ClientError as error:
+
+        error_message = error.response.get(
+            "Error", {}
+        ).get(
+            "Message",
+            "Unable to retrieve CloudWatch metrics"
+        )
+
+        raise HTTPException(
+            status_code=502,
+            detail=error_message
+        )
+
+
+# --------------------------------------------------
+# 15. Start Recovery Workflow
 # --------------------------------------------------
 
 def start_recovery_workflow(
@@ -202,6 +357,7 @@ def start_recovery_workflow(
     }
 
     try:
+
         response = sfn_client.start_execution(
             stateMachineArn=STATE_MACHINE_ARN,
             name=f"aira-{decision}-{uuid.uuid4().hex[:12]}",
@@ -215,10 +371,12 @@ def start_recovery_workflow(
         }
 
     except ClientError as error:
+
         error_message = error.response.get(
             "Error", {}
         ).get(
-            "Message", "Unable to start recovery workflow"
+            "Message",
+            "Unable to start recovery workflow"
         )
 
         raise HTTPException(
@@ -228,7 +386,7 @@ def start_recovery_workflow(
 
 
 # --------------------------------------------------
-# 14. Recovery Approval Endpoint
+# 16. Recovery Approval Endpoint
 # --------------------------------------------------
 
 @app.post("/recovery/approve")
@@ -246,7 +404,7 @@ def approve_recovery(request: RecoveryDecisionRequest):
 
 
 # --------------------------------------------------
-# 15. Recovery Rejection Endpoint
+# 17. Recovery Rejection Endpoint
 # --------------------------------------------------
 
 @app.post("/recovery/reject")
